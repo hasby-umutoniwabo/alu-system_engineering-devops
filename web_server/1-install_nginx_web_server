@@ -1,28 +1,28 @@
 #!/usr/bin/env bash
-# This script installs and configures Nginx web server to serve a page containing "Holberton School"
+# Installs Nginx and ensures it runs on port 80 with "Holberton School" as the index page
+
 
 # Update package lists
 apt-get -y update
 
+
 # Install Nginx
 apt-get -y install nginx
 
-# Allow Nginx through firewall
-ufw allow 'Nginx HTTP'
 
-# Create index page with required content
-echo "Holberton School" > /var/www/html/index.nginx-debian.html
+# Modify Nginx configuration to serve from /var/www/html
+sed -i 's|root /usr/share/nginx/html;|root /var/www/html;|' /etc/nginx/sites-available/default
+sed -i 's|root /usr/share/nginx/html;|root /var/www/html;|' /etc/nginx/sites-enabled/default
 
-# Make a symbolic link to default index (in case it's looking at index.html instead)
-ln -sf /var/www/html/index.nginx-debian.html /var/www/html/index.html
 
-# Ensure nginx config is using the default document root
-grep -q "root /var/www/html" /etc/nginx/sites-available/default || sed -i "s#root /var/www/html;#root /var/www/html;#g" /etc/nginx/sites-available/default
+# Ensure the web root directory exists
+mkdir -p /var/www/html
 
-# Make sure Nginx is listening on port 80
-sed -i 's/listen [0-9]* default_server;/listen 80 default_server;/g' /etc/nginx/sites-available/default
-sed -i 's/listen \[::\]:[0-9]* default_server;/listen [::]:80 default_server;/g' /etc/nginx/sites-available/default
 
-# Restart Nginx to apply changes (without using systemctl)
+# Overwrite the default index.html with "Holberton School"
+echo "Holberton School" > /var/www/html/index.html
+
+
+# Restart Nginx to apply changes
 service nginx restart
 
