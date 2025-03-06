@@ -1,28 +1,12 @@
 #!/usr/bin/env bash
-# Installs Nginx and ensures it runs on port 80 with "Holberton School" as the index page
+# Installs Nginx with the following configurations:
+#+    Listens on port 80.
+#+    Returns a page containing "Holberton School" when queried
+#++    at the root with a curl GET request.
 
-
-# Update package lists
-apt-get -y update
-
-
-# Install Nginx
-apt-get -y install nginx
-
-
-# Modify Nginx configuration to serve from /var/www/html
-sed -i 's|root /usr/share/nginx/html;|root /var/www/html;|' /etc/nginx/sites-available/default
-sed -i 's|root /usr/share/nginx/html;|root /var/www/html;|' /etc/nginx/sites-enabled/default
-
-
-# Ensure the web root directory exists
-mkdir -p /var/www/html
-
-
-# Overwrite the default index.html with "Holberton School"
-echo "Holberton School" > /var/www/html/index.html
-
-
-# Restart Nginx to apply changes
+apt-get update -y
+apt-get install nginx -y 
+sudo ufw allow 'Nginx HTTP'
+sh -c 'echo "Holberton School" > /var/www/html/index.html'
 service nginx restart
 
