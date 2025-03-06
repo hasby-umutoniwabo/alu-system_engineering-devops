@@ -1,64 +1,19 @@
 #!/usr/bin/env bash
 # This script installs and configures Nginx web server to serve a page containing "Holberton School"
 
-# Exit on any error
-set -e
-
-echo "Starting Nginx installation and configuration..."
-
 # Update package lists
 apt-get update -y
 
 # Install Nginx
 apt-get install -y nginx
 
-# Ensure Nginx is running and enabled
-if pgrep nginx > /dev/null
-then
-    echo "Nginx is already running"
-else
-    # Start Nginx manually since we can't use systemctl
-    /etc/init.d/nginx start
-    echo "Nginx started"
-fi
-
 # Configure Nginx to return "Holberton School" for root path
-cat > /var/www/html/index.html << EOF
-Holberton School for the win!
-EOF
+echo "Holberton School" > /var/www/html/index.html
 
-# Make sure Nginx is configured to listen on port 80
-# Check if the default config is already set to listen on port 80
-if grep -q "listen 80" /etc/nginx/sites-available/default; then
-    echo "Nginx already configured to listen on port 80"
-else
-    # If not, modify the config to listen on port 80
-    sed -i 's/listen [0-9]* default_server;/listen 80 default_server;/g' /etc/nginx/sites-available/default
-    sed -i 's/listen \[::\]:[0-9]* default_server;/listen [::]:80 default_server;/g' /etc/nginx/sites-available/default
-fi
+# Make sure Nginx is listening on port 80 (default)
+sed -i 's/listen [0-9]* default_server;/listen 80 default_server;/g' /etc/nginx/sites-available/default
+sed -i 's/listen \[::\]:[0-9]* default_server;/listen [::]:80 default_server;/g' /etc/nginx/sites-available/default
 
 # Restart Nginx to apply changes (without using systemctl)
-echo "Restarting Nginx to apply changes..."
 /etc/init.d/nginx restart
-
-# Verify that Nginx is running and serving the correct content
-echo "Verification:"
-echo "Checking if Nginx is running..."
-if pgrep nginx > /dev/null; then
-    echo "Nginx is running"
-else
-    echo "ERROR: Nginx is not running"
-    exit 1
-fi
-
-echo "Checking if Nginx returns the correct content..."
-RESULT=$(curl -s http://localhost/)
-if [[ "$RESULT" == *"Holberton School"* ]]; then
-    echo "SUCCESS: Nginx returns the correct content"
-else
-    echo "ERROR: Nginx is not returning the expected content"
-    exit 1
-fi
-
-echo "Installation and configuration completed successfully!"
 
