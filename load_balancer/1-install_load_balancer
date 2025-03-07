@@ -16,14 +16,19 @@ sudo cp /etc/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg.bak
 
 # Check if the configuration for frontend and backend exists
 if ! grep -q "frontend hasbiyallah-frontend" /etc/haproxy/haproxy.cfg; then
-# Add frontend and backend configuration
-server_config="frontend hasbiyallah-fronted bind*:80 mode http default_backend hasbiyallah-backend
+    # Add frontend and backend configuration
+    server_config="frontend hasbiyallah-frontend
+        bind *:80
+        mode http
+        default_backend hasbiyallah-backend
 
-backend hasbiyallah-backend balance roundrobin server 6531-web-01 3.86.194.153:80 check 
-server 6531-web-02 3.91.200.254:80 check"
-
-# Append the configuration to haproxy.cfg
- echo "$server_config" | sudo tee -a /etc/haproxy/haproxy.cfg
+    backend hasbiyallah-backend
+        balance roundrobin
+        server 6310-web-01 3.86.194.153:80 check
+        server 6310-web-02 3.91.200.254:80 check"
+    
+    # Append the configuration to haproxy.cfg
+    echo "$server_config" | sudo tee -a /etc/haproxy/haproxy.cfg
 else
     echo "Frontend and Backend configuration already exists in haproxy.cfg."
 fi
@@ -42,4 +47,3 @@ echo "Checking HAProxy configuration..."
 curl -Is http://localhost | grep X-Served-By
 
 echo "HAProxy installation and configuration complete. Traffic is now load balanced between web-01 and web-02."i
-
