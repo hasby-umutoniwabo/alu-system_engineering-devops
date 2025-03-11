@@ -13,16 +13,23 @@ sudo ufw allow 22/tcp
 sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
 
-# Modify UFW configuration files to use DROP instead of REJECT
+# Make sure UFW is using DROP instead of REJECT for default deny
+# This is the critical part - modify before.rules to ensure DROP behavior
+sudo sed -i '/^### RULES ###/a-A ufw-before-input -j DROP' /etc/ufw/before.rules
+
+# Also ensure after.rules uses DROP
 sudo sed -i 's/-A ufw-reject-input -j REJECT --reject-with icmp-port-unreachable/-A ufw-reject-input -j DROP/g' /etc/ufw/after.rules
 sudo sed -i 's/-A ufw-reject-input -j REJECT --reject-with icmp-proto-unreachable/-A ufw-reject-input -j DROP/g' /etc/ufw/after.rules
 sudo sed -i 's/-A ufw-reject-forward -j REJECT --reject-with icmp-port-unreachable/-A ufw-reject-forward -j DROP/g' /etc/ufw/after.rules
 sudo sed -i 's/-A ufw-reject-forward -j REJECT --reject-with icmp-proto-unreachable/-A ufw-reject-forward -j DROP/g' /etc/ufw/after.rules
 
-# Modify default policy files (replace instead of append)
+# Ensure default policies are set to DROP
 sudo sed -i 's/DEFAULT_INPUT_POLICY=".*"/DEFAULT_INPUT_POLICY="DROP"/g' /etc/default/ufw
 sudo sed -i 's/DEFAULT_FORWARD_POLICY=".*"/DEFAULT_FORWARD_POLICY="DROP"/g' /etc/default/ufw
 sudo sed -i 's/DEFAULT_OUTPUT_POLICY=".*"/DEFAULT_OUTPUT_POLICY="ACCEPT"/g' /etc/default/ufw
+
+# Add a rule to ensure all other incoming connections are dropped
+sudo ufw deny all
 
 # Enable UFW
 sudo ufw --force enable
