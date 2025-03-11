@@ -1,30 +1,42 @@
 #!/bin/bash
 
-# Update and install UFW
+# Update and install packages
 sudo apt-get update
-sudo apt-get install -y ufw
+sudo apt-get install -y ufw iptables-persistent
 
-# Reset UFW (start with clean slate)
+# Reset UFW to default state
 sudo ufw --force reset
 
-# Set default policies
+# Set basic UFW rules
 sudo ufw default deny incoming
 sudo ufw default allow outgoing
-
-# Allow the specified ports
 sudo ufw allow 22/tcp
 sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
 
-# Important: Configure UFW to use DROP instead of REJECT
-# This is what changes behavior from "closed" to "filtered"
-sudo sed -i 's/DROP/DROP/g' /etc/default/ufw  # Ensure it's DROP
-sudo sed -i 's/REJECT/DROP/g' /etc/default/ufw  # Change any REJECT to DROP
-sudo sed -i 's/-j REJECT/-j DROP/g' /etc/ufw/before.rules
-sudo sed -i 's/-j REJECT/-j DROP/g' /etc/ufw/after.rules
+# Modify UFW configuration files to use DROP instead of REJECT
+sudo sed -i 's/-A ufw-reject-input -j REJECT --reject-with icmp-port-unreachable/-A ufw-reject-input -j DROP/g' /etc/ufw/after.rules
+sudo sed -i 's/-A ufw-reject-input -j REJECT --reject-with icmp-proto-unreachable/-A ufw-reject-input -j DROP/g' /etc/ufw/after.rules
+sudo sed -i 's/-A ufw-reject-forward -j REJECT --reject-with icmp-port-unreachable/-A ufw-reject-forward -j DROP/g' /etc/ufw/after.rules
+sudo sed -i 's/-A ufw-reject-forward -j REJECT --reject-with icmp-proto-unreachable/-A ufw-reject-forward -j DROP/g' /etc/ufw/after.rules
+
+# Modify default policy files
+echo "DEFAULT_INPUT_POLICY=\"DROP\"" | sudo tee -a /etc/default/ufw
+echo "DEFAULT_FORWARD_POLICY=\"DROP\"" | sudo tee -a /etc/default/ufw
+echo "DEFAULT_OUTPUT_POLICY=\"ACCEPT\"" | sudo tee -a /etc/default/ufw
+
+# Add direct iptables rule to ensure drop
+sudo iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 443 -j ACCEPT
+sudo iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+sudo iptables -A INPUT -i lo -j ACCEPT
+sudo iptables -A INPUT -j DROP
+
+# Save iptables rules
+sudo sh -c "iptables-save > /etc/iptables/rules.v4"
 
 # Enable UFW
 sudo ufw --force enable
 
-# Verify UFW status
-sudo ufw status verbose
+echo "Firewall configured to filter all incoming connections except TCP ports 22, 80, and 443"
