@@ -1,17 +1,31 @@
+#!/bin/bash
+
 echo -e "Updating\n"
 sudo apt-get update
 echo -e "Installing UFW\n"
 sudo apt-get install -y ufw
 echo -e "configuring UFW...\n"
-# Allow Outgoing and Deny Incoming
+
+# Reset UFW to clear any existing rules
+sudo ufw --force reset
+
+# Set default policies
 sudo ufw default deny incoming
 sudo ufw default allow outgoing
-# Set default deny policy to drop (filtered) instead of reject (closed)
-sudo ufw route insert 1 deny in proto tcp from any to any
-# Allow ports
+
+# Allow specific ports
 sudo ufw allow 22/tcp
 sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
-# Enable Fire Wall
+
+# Add a specific rule to drop packets rather than reject them
+# This changes the behavior from "closed" to "filtered"
+sudo ufw reload
+sudo sed -i 's/DEFAULT_INPUT_POLICY="DROP"/DEFAULT_INPUT_POLICY="DROP"/' /etc/default/ufw
+sudo sed -i 's/DEFAULT_FORWARD_POLICY="DROP"/DEFAULT_FORWARD_POLICY="DROP"/' /etc/default/ufw
+sudo sed -i 's/REJECT/DROP/g' /etc/ufw/after.rules
+
+# Enable UFW with the new configuration
 sudo ufw --force enable
+
 echo -e "Process Completed.\n"
