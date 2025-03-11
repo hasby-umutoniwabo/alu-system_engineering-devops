@@ -2,11 +2,12 @@
 
 echo -e "Updating\n"
 sudo apt-get update
+
 echo -e "Installing UFW\n"
 sudo apt-get install -y ufw
-echo -e "configuring UFW...\n"
 
-# Reset UFW to clear any existing rules
+echo -e "Configuring UFW...\n"
+# Reset UFW
 sudo ufw --force reset
 
 # Set default policies
@@ -18,14 +19,25 @@ sudo ufw allow 22/tcp
 sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
 
-# Add a specific rule to drop packets rather than reject them
-# This changes the behavior from "closed" to "filtered"
-sudo ufw reload
-sudo sed -i 's/DEFAULT_INPUT_POLICY="DROP"/DEFAULT_INPUT_POLICY="DROP"/' /etc/default/ufw
+# Modify UFW to use DROP instead of REJECT
 sudo sed -i 's/DEFAULT_FORWARD_POLICY="DROP"/DEFAULT_FORWARD_POLICY="DROP"/' /etc/default/ufw
-sudo sed -i 's/REJECT/DROP/g' /etc/ufw/after.rules
+sudo sed -i 's/DEFAULT_INPUT_POLICY="REJECT"/DEFAULT_INPUT_POLICY="DROP"/' /etc/default/ufw
+sudo sed -i 's/DEFAULT_INPUT_POLICY="DROP"/DEFAULT_INPUT_POLICY="DROP"/' /etc/default/ufw
+
+# This is crucial - replace all REJECT rules with DROP in after.rules
+sudo sed -i 's/-j REJECT/-j DROP/g' /etc/ufw/after.rules
+sudo sed -i 's/-j reject/-j DROP/g' /etc/ufw/after.rules
+
+# Also add a direct iptables rule to ensure proper filtering
+sudo iptables -F INPUT
+sudo iptables -P INPUT DROP
+sudo iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 443 -j ACCEPT
+sudo iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+sudo iptables -A INPUT -i lo -j ACCEPT
 
 # Enable UFW with the new configuration
 sudo ufw --force enable
 
-echo -e "Process Completed.\n"
+echo -e "Process Completed. Firewall configured to filter (drop) all incoming connections except ports 22, 80, and 443.\n"
